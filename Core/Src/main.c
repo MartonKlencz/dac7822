@@ -98,10 +98,13 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+
   HAL_UART_Receive_IT(&huart2, Rx_data, 2);
 
 
-  GPIOB->BSRR = (uint32_t)  ((1 << 15) | (1 << 14) | (1 << 13)); // set CLR(15), RW(14) and CS(13) to high
+  // BSRR is a register that controls the GPIO outputs
+  // see reference manual page 299 (https://www.st.com/resource/en/reference_manual/rm0351-stm32l47xxx-stm32l48xxx-stm32l49xxx-and-stm32l4axxx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)
+  GPIOB->BSRR = (uint32_t)  ((1 << 15) | (1 << 14) | (1 << 13)); // set CLR(Pin 15), RW(14) and CS(13) to high
 
   //HAL_TIM_Base_Start_IT(&htim7);
   /* USER CODE END 2 */
@@ -110,29 +113,27 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  GPIOB->BSRR = (uint32_t) ((~dacValue) << 16 | (dacValue));
-
+	  GPIOB->BSRR = (uint32_t) ((~dacValue) << 16 | (dacValue)); // set pin low -> write ones to upper 16 bits of 32 bit value in register
+	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 // set pin high -> write ones to lower 16 bits of 32 bit value in register
+	  // ugly delay but works
 	  for (int i = 0; i < 1; i++)
 	  {
 		  i--;
 		  i++;
 	  }
-	  GPIOB->BSRR = (uint32_t) ((1 << 14) | (1 << 13));
-	  setData = 0;
+	  GPIOB->BSRR = (uint32_t) ((1 << 14) | (1 << 13)); // pull RW and CS high to clock in the data (as per the manual)
+	  setData = 0; // this variable is unused, becomes 1 after data is received from UART
 
-//	  for (int i = 0; i < 100; i++)
-//	  {
-//		  i--;
-//		  i++;
-//	  }
+	  // again, this is ugly, but works
+	  for (int i = 0; i < 100; i++)
+	  {
+		  i--;
+		  i++;
+	  }
 	  dacValue = 4095 - dacValue;
 	  dacValue &= 0b0000111111111111;
-	  dacValue |= (0x80 << 8);
-//	  if (setData == 1)
-//	  {
-//
-//
-//	  }
+	  dacValue |= (0x80 << 8); // pin 15 is CLR, set to high always
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
